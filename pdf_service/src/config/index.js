@@ -10,9 +10,7 @@ const config = {
   
   // CORS Configuration
   cors: {
-    origins: process.env.ALLOWED_ORIGINS 
-      ? process.env.ALLOWED_ORIGINS.split(',')
-      : ['http://localhost:3000', 'http://localhost:3001'],
+    origins: ['http://localhost:3000', 'http://localhost:3001', 'http://localhost:5173'],
     credentials: true,
     optionsSuccessStatus: 200
   },
@@ -22,7 +20,8 @@ const config = {
     timeout: parseInt(process.env.PDF_TIMEOUT) || 30000,
     cleanupDelay: parseInt(process.env.CLEANUP_DELAY) || 5000,
     tempDir: process.env.TEMP_DIR || './temp',
-    baseUrl: process.env.BASE_URL || 'https://inzighted.com'
+    baseUrl: process.env.BASE_URL || 'https://inzighted.com',
+    authCookie: process.env.INZIGHTED_AUTH_COOKIE || '' // Add auth cookie config
   },
   
   // Browser Configuration
@@ -54,6 +53,12 @@ const config = {
       windowMs: 15 * 60 * 1000, // 15 minutes
       max: process.env.NODE_ENV === 'production' ? 100 : 1000 // limit each IP
     }
+  },
+  
+  // Backend API Configuration
+  backend: {
+
+    baseUrl: process.env.BACKEND_API_URL || 'https://api.inzighted.com/api'
   }
 };
 

@@ -11,22 +11,27 @@ import pdfService from './services/pdfService.js';
 
 const app = express();
 
+// CORS configuration
+const corsOptions = {
+  origin: (origin, callback) => {
+    // Allow requests with no origin (like curl, mobile apps)
+    if (!origin) return callback(null, true);
+    if (config.cors.origins.includes(origin)) {
+      return callback(null, true);
+    }
+    return callback(new Error('Not allowed by CORS'));
+  },
+  credentials: config.cors.credentials,
+  optionsSuccessStatus: config.cors.optionsSuccessStatus
+};
+app.use(cors(corsOptions));
+
 // Security middleware
 app.use(helmet());
 
 // Rate limiting
 const limiter = rateLimit(config.security.rateLimit);
 app.use(limiter);
-
-// CORS configuration
-const corsOptions = {
-  origin: config.nodeEnv === 'production' 
-    ? config.cors.origins.filter(origin => origin.includes('inzighted.com'))
-    : config.cors.origins,
-  credentials: config.cors.credentials,
-  optionsSuccessStatus: config.cors.optionsSuccessStatus
-};
-app.use(cors(corsOptions));
 
 // Body parsing middleware
 app.use(express.json({ limit: '10mb' }));

@@ -4,36 +4,30 @@ import config from '../config/index.js';
 
 export const generatePdf = async (req, res) => {
   const { studentId, testId } = req.query;
-  
+  // Extract JWT token from Authorization header if present
+  let jwtToken = undefined;
+  const authHeader = req.headers.authorization;
+  if (authHeader && authHeader.startsWith('Bearer ')) {
+    jwtToken = authHeader.replace(/^Bearer /, '');
+  }
   try {
     logger.info('PDF generation request received', { studentId, testId });
-    
-    const result = await pdfService.generatePdf(studentId, testId);
-    
-    // Set proper headers for PDF download
+    const result = await pdfService.generatePdf(studentId, testId, jwtToken);
     res.setHeader('Content-Type', 'application/pdf');
     res.setHeader('Content-Disposition', `attachment; filename="${result.filename}"`);
     res.setHeader('Content-Length', result.buffer.length);
-    
-    // Send the PDF
     res.send(result.buffer);
-    
-    // Schedule cleanup if in production
     if (config.nodeEnv === 'production') {
       pdfService.cleanup(result.filePath);
     }
-    
     logger.info('PDF sent successfully', { studentId, testId, filename: result.filename });
-    
   } catch (error) {
     logger.error('PDF generation request failed', {
       studentId,
       testId,
       error: error.message
     });
-    
     const isDevelopment = config.nodeEnv === 'development';
-    
     res.status(500).json({
       error: 'PDF Generation Failed',
       message: 'Unable to generate PDF report',
