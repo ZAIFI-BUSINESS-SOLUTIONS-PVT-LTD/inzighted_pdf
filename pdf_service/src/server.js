@@ -6,7 +6,7 @@ import config from './config/index.js';
 import logger from './utils/logger.js';
 import { requestLogger, errorHandler, notFound } from './middleware/logging.js';
 import { validatePdfRequest } from './middleware/validation.js';
-import { generatePdf, healthCheck } from './controllers/pdfController.js';
+import { generatePdf, healthCheck, generateBulkPdfZip, generateStudentSelfPdf, generateTeacherSelfPdf } from './controllers/pdfController.js';
 import pdfService from './services/pdfService.js';
 
 const app = express();
@@ -43,6 +43,9 @@ app.use(requestLogger);
 // Routes
 app.get('/health', healthCheck);
 app.get('/generate-pdf', validatePdfRequest, generatePdf);
+app.post('/generate-bulk-pdf', generateBulkPdfZip);
+app.get('/generate-student-pdf', generateStudentSelfPdf);
+app.get('/generate-teacher-pdf', generateTeacherSelfPdf);
 
 // Error handling
 app.use(notFound);

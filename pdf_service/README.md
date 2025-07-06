@@ -23,41 +23,72 @@ pdf_service/
 
 ## 🚀 Quick Start
 
-### Development Mode
+### Development Setup
 
-1. **Clone and install:**
+1. **Install dependencies:**
    ```bash
    npm install
    ```
-
 2. **Set up environment:**
    ```bash
    copy .env.example .env
-   # Edit .env with your configuration
+   # Edit .env with your local development configuration
+   # (Set LOG_LEVEL=debug for verbose logs)
    ```
-
 3. **Start development server:**
    ```bash
    npm run dev
-   # or use the batch file
-   scripts\start-dev.bat
+   # or use Docker Compose for dev
+   npm run docker:dev
    ```
+4. **Hot reload:**
+   - The dev server uses `nodemon` for automatic reloads on code changes.
+5. **Testing:**
+   ```bash
+   npm test
+   npm run test:new
+   ```
+6. **Linting:**
+   - (Optional) Set up ESLint for code quality. Update the `lint` script and run:
+     ```bash
+     npm run lint
+     ```
 
-### Production Mode
+### Production Deployment
 
 1. **Install production dependencies:**
    ```bash
    npm ci --only=production
    ```
-
-2. **Start production server:**
+2. **Set up production environment:**
    ```bash
-   npm start
-   # or use the batch file
-   scripts\start-prod.bat
+   copy .env.example .env.production
+   # Edit .env.production with secure, production-ready values
+   # (Set LOG_LEVEL=info, secure CORS, etc.)
    ```
+3. **Start with a process manager:**
+   ```bash
+   npm install -g pm2
+   pm2 start ecosystem.config.js
+   # or use forever
+   npm install -g forever
+   forever start src/server.js
+   ```
+4. **Dockerized deployment:**
+   ```bash
+   npm run docker:prod
+   # or manually:
+   docker build -f docker/Dockerfile -t inzighted-pdf-service .
+   docker run -d -p 8080:8080 --env-file .env.production inzighted-pdf-service
+   ```
+5. **Reverse proxy & SSL:**
+   - Set up nginx/Apache as a reverse proxy with SSL (see docs/deployment.md).
+6. **Monitoring & logs:**
+   - Monitor with `pm2 logs` or `tail -f logs/app.log`.
+   - Health check: `GET /health` endpoint.
+   - Set up log rotation (see deployment guide).
 
-## 🔧 Configuration
+### Environment Variables
 
 Environment variables can be set in `.env` file:
 
@@ -69,6 +100,25 @@ Environment variables can be set in `.env` file:
 | `PDF_TIMEOUT` | PDF generation timeout (ms) | `30000` |
 | `BASE_URL` | InzightEd frontend URL | `https://inzighted.com` |
 | `LOG_LEVEL` | Logging level | `debug` (dev), `info` (prod) |
+
+## ✅ Development Checklist
+- [ ] `.env` created and configured for local dev
+- [ ] `npm install` run successfully
+- [ ] Dev server runs with `npm run dev` or `npm run docker:dev`
+- [ ] Logging is verbose (`LOG_LEVEL=debug`)
+- [ ] Tests pass (`npm test`)
+- [ ] Linting (if configured)
+
+## ✅ Production Checklist
+- [ ] `.env.production` created and secured
+- [ ] `npm ci --only=production` run
+- [ ] Server started with `pm2` or `forever`
+- [ ] Docker image built and running (if using Docker)
+- [ ] Reverse proxy and SSL configured
+- [ ] Logging level set to `info` or `warn`
+- [ ] Log rotation enabled
+- [ ] Health and log monitoring set up
+- [ ] Security checklist from deployment guide followed
 
 ## 📋 API Endpoints
 
@@ -149,7 +199,6 @@ npm test
 - Monitor performance
 
 ## 📚 Additional Documentation
-
-- [API Documentation](./docs/api.md)
 - [Deployment Guide](./docs/deployment.md)
+- [API Documentation](./docs/api.md)
 - [Troubleshooting](./docs/troubleshooting.md)

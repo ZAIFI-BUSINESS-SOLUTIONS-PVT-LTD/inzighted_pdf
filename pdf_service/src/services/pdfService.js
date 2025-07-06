@@ -5,6 +5,7 @@ import axios from 'axios';
 import { fileURLToPath } from 'url';
 import config from '../config/index.js';
 import logger from '../utils/logger.js';
+import archiver from 'archiver';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -171,6 +172,45 @@ class PdfService {
     }
   }
 
+  /**
+   * Generate PDFs for multiple students and zip them.
+   * @param {Array<string>} studentIds - Array of student IDs
+   * @param {string} testId - Test ID
+   * @param {string} jwtToken - JWT token for authentication
+   * @returns {Promise<string>} - Path to the generated zip file
+   */
+  async generateBulkPdfZip(studentIds, testId, jwtToken) {
+    if (!this.isInitialized) {
+      await this.initialize();
+    }
+    const zipFilename = `inzighted_reports_${testId}_${Date.now()}.zip`;
+    const zipFilePath = path.join(config.pdf.tempDir, zipFilename);
+    const output = fs.createWriteStream(zipFilePath);
+    const archive = archiver('zip', { zlib: { level: 9 } });
+
+    return new Promise(async (resolve, reject) => {
+      output.on('close', () => {
+        logger.info('Bulk PDF zip created', { zipFilename, size: archive.pointer() });
+        resolve(zipFilePath);
+      });
+      archive.on('error', (err) => {
+        logger.error('Error creating zip', { error: err.message });
+        reject(err);
+      });
+      archive.pipe(output);
+
+      for (const studentId of studentIds) {
+        try {
+          const { filePath, filename } = await this.generatePdf(studentId, testId, jwtToken);
+          archive.file(filePath, { name: filename });
+        } catch (err) {
+          logger.warn('Failed to generate PDF for student', { studentId, error: err.message });
+        }
+      }
+      archive.finalize();
+    });
+  }
+
   async cleanup(filePath) {
     if (!filePath || !fs.existsSync(filePath)) return;
 
@@ -259,6 +299,134 @@ class PdfService {
     });
 
     return result;
+  }
+
+  /**
+   * Generate PDF for student self-report (student login)
+   * @param {string} testId
+   * @param {string} jwtToken
+   */
+  async generateStudentSelfPdf(testId, jwtToken) {
+    if (!this.isInitialized) {
+      await this.initialize();
+    }
+    // If testId is 'overall' (any case), use '0'. Otherwise, remove any non-digit prefix (e.g., 'Test1' -> '1')
+    let sanitizedTestId;
+    if (String(testId).trim().toLowerCase() === 'overall') {
+      sanitizedTestId = '0';
+    } else {
+      sanitizedTestId = String(testId).replace(/^[^\d]*(\d+)$/, '$1');
+    }
+    if (!sanitizedTestId) {
+      throw new Error(`Invalid testId: ${testId}.`);
+    }
+    const startTime = Date.now();
+    let page = null;
+    try {
+      logger.info('Starting PDF generation for student self-report', { testId: sanitizedTestId });
+      page = await this.browser.newPage();
+      if (jwtToken) {
+        await page.evaluateOnNewDocument((token) => {
+          localStorage.setItem('token', token);
+        }, jwtToken);
+        await page.setCookie({
+          name: 'jwt',
+          value: jwtToken,
+          domain: new URL(config.pdf.baseUrl).hostname,
+          path: '/',
+          httpOnly: false
+        });
+      }
+      await page.setViewport({ width: 1200, height: 800 });
+      const reportURL = `${config.pdf.baseUrl}/student-report?testId=${encodeURIComponent(sanitizedTestId)}`;
+      logger.debug('Navigating to student self-report URL', { url: reportURL });
+      await page.goto(reportURL, {
+        waitUntil: 'networkidle0',
+        timeout: config.pdf.timeout
+      });
+      await page.waitForFunction(
+        "window.__PDF_READY__ === true",
+        { timeout: 30000, polling: 500 }
+      );
+      const pdfBuffer = await page.pdf({
+        format: 'A4', printBackground: true,
+        margin: { top: '20px', right: '20px', bottom: '20px', left: '20px' }
+      });
+      const filename = `inzighted_student_report_${sanitizedTestId}_${Date.now()}.pdf`;
+      const filePath = path.join(config.pdf.tempDir, filename);
+      fs.writeFileSync(filePath, pdfBuffer);
+      logger.info('Student self-report PDF generated', { testId: sanitizedTestId, filename });
+      return { filePath, filename, buffer: pdfBuffer };
+    } catch (error) {
+      logger.error('Student self-report PDF generation failed', { testId: sanitizedTestId, error: error.message });
+      throw error;
+    } finally {
+      if (page) await page.close();
+    }
+  }
+
+  /**
+   * Generate PDF for teacher self-report (teacher login)
+   * @param {string} testId
+   * @param {string} jwtToken
+   */
+  async generateTeacherSelfPdf(testId, jwtToken) {
+    if (!this.isInitialized) {
+      await this.initialize();
+    }
+    // If testId is 'overall' (any case), use '0'. Otherwise, remove any non-digit prefix (e.g., 'Test1' -> '1')
+    let sanitizedTestId;
+    if (String(testId).trim().toLowerCase() === 'overall') {
+      sanitizedTestId = '0';
+    } else {
+      sanitizedTestId = String(testId).replace(/^[^\d]*(\d+)$/, '$1');
+    }
+    if (!sanitizedTestId) {
+      throw new Error(`Invalid testId: ${testId}.`);
+    }
+    const startTime = Date.now();
+    let page = null;
+    try {
+      logger.info('Starting PDF generation for teacher self-report', { testId: sanitizedTestId });
+      page = await this.browser.newPage();
+      if (jwtToken) {
+        await page.evaluateOnNewDocument((token) => {
+          localStorage.setItem('token', token);
+        }, jwtToken);
+        await page.setCookie({
+          name: 'jwt',
+          value: jwtToken,
+          domain: new URL(config.pdf.baseUrl).hostname,
+          path: '/',
+          httpOnly: false
+        });
+      }
+      await page.setViewport({ width: 1200, height: 800 });
+      const reportURL = `${config.pdf.baseUrl}/teacher-report?testId=${encodeURIComponent(sanitizedTestId)}`;
+      logger.debug('Navigating to teacher self-report URL', { url: reportURL });
+      await page.goto(reportURL, {
+        waitUntil: 'networkidle0',
+        timeout: config.pdf.timeout
+      });
+      await page.waitForFunction(
+        "window.__PDF_READY__ === true",
+        { timeout: 30000, polling: 500 }
+      );
+      const pdfBuffer = await page.pdf({
+        format: 'A4', printBackground: true,
+        margin: { top: '20px', right: '20px', bottom: '20px', left: '20px' }
+      });
+      const filename = `inzighted_teacher_report_${sanitizedTestId}_${Date.now()}.pdf`;
+      const filePath = path.join(config.pdf.tempDir, filename);
+      fs.writeFileSync(filePath, pdfBuffer);
+      logger.info('Teacher self-report PDF generated', { testId: sanitizedTestId, filename });
+      return { filePath, filename, buffer: pdfBuffer };
+    } catch (error) {
+      logger.error('Teacher self-report PDF generation failed', { testId: sanitizedTestId, error: error.message });
+      throw error;
+    } finally {
+      if (page) await page.close();
+    }
   }
 }
 
