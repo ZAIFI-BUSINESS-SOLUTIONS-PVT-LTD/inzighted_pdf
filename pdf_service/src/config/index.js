@@ -10,7 +10,7 @@ const config = {
   
   // CORS Configuration
   cors: {
-    origins: ['http://localhost:3000', 'http://localhost:3001', 'http://localhost:5173'],
+    origins: ['http://localhost:3000', 'http://localhost:3001', 'http://localhost:5173', "https://www.inzighted.com"],
     credentials: true,
     optionsSuccessStatus: 200
   },
