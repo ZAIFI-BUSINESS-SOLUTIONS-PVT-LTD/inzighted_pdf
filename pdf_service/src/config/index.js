@@ -7,14 +7,16 @@ const config = {
   // Server Configuration
   port: process.env.PORT || 8080,
   nodeEnv: process.env.NODE_ENV || 'development',
-  
+
   // CORS Configuration
   cors: {
-    origins: ['http://localhost:3000', 'http://localhost:3001', 'http://localhost:5173', "https://www.inzighted.com"],
+    origins: process.env.ALLOWED_ORIGINS
+      ? process.env.ALLOWED_ORIGINS.split(',')
+      : ['http://localhost:3000', 'http://localhost:3001', 'http://localhost:5173', "https://inzighted.com"],
     credentials: true,
     optionsSuccessStatus: 200
   },
-  
+
   // PDF Configuration
   pdf: {
     timeout: parseInt(process.env.PDF_TIMEOUT) || 30000,
@@ -23,30 +25,30 @@ const config = {
     baseUrl: process.env.BASE_URL || 'https://inzighted.com',
     authCookie: process.env.INZIGHTED_AUTH_COOKIE || '' // Add auth cookie config
   },
-  
+
   // Browser Configuration
   puppeteer: {
     headless: process.env.PUPPETEER_HEADLESS !== 'false',
-    args: process.env.CHROME_ARGS 
+    args: process.env.CHROME_ARGS
       ? process.env.CHROME_ARGS.split(',')
       : [
-          '--no-sandbox',
-          '--disable-setuid-sandbox',
-          '--disable-dev-shm-usage',
-          '--disable-accelerated-2d-canvas',
-          '--no-first-run',
-          '--no-zygote',
-          '--disable-gpu'
-        ],
+        '--no-sandbox',
+        '--disable-setuid-sandbox',
+        '--disable-dev-shm-usage',
+        '--disable-accelerated-2d-canvas',
+        '--no-first-run',
+        '--no-zygote',
+        '--disable-gpu'
+      ],
     executablePath: process.env.CHROME_PATH || undefined
   },
-  
+
   // Logging Configuration
   logging: {
     level: process.env.LOG_LEVEL || (process.env.NODE_ENV === 'production' ? 'info' : 'debug'),
     file: process.env.LOG_FILE || './logs/app.log'
   },
-  
+
   // Security Configuration
   security: {
     rateLimit: {
@@ -54,10 +56,9 @@ const config = {
       max: process.env.NODE_ENV === 'production' ? 100 : 1000 // limit each IP
     }
   },
-  
+
   // Backend API Configuration
   backend: {
-
     baseUrl: process.env.BACKEND_API_URL || 'https://api.inzighted.com/api'
   }
 };
