@@ -12,9 +12,13 @@ export const generatePdf = async (req, res) => {
   if (authHeader && authHeader.startsWith('Bearer ')) {
     jwtToken = authHeader.replace(/^Bearer /, '');
   }
+  
+  // Get origin from request headers
+  const origin = req.headers.origin || config.tenants.defaultOrigin;
+  
   try {
-    logger.info('PDF generation request received', { studentId, testId });
-    const result = await pdfService.generatePdf(studentId, testId, jwtToken);
+    logger.info('PDF generation request received', { studentId, testId, origin });
+    const result = await pdfService.generatePdf(studentId, testId, jwtToken, origin);
     res.setHeader('Content-Type', 'application/pdf');
     res.setHeader('Content-Disposition', `attachment; filename="${result.filename}"`);
     res.setHeader('Content-Length', result.buffer.length);
@@ -48,9 +52,13 @@ export const generateBulkPdfZip = async (req, res) => {
   if (!Array.isArray(studentIds) || !testId) {
     return res.status(400).json({ error: 'studentIds (array) and testId are required.' });
   }
+  
+  // Get origin from request headers
+  const origin = req.headers.origin || config.tenants.defaultOrigin;
+  
   try {
-    logger.info('Bulk PDF zip generation request received', { studentCount: studentIds.length, testId });
-    const zipFilePath = await pdfService.generateBulkPdfZip(studentIds, testId, jwtToken);
+    logger.info('Bulk PDF zip generation request received', { studentCount: studentIds.length, testId, origin });
+    const zipFilePath = await pdfService.generateBulkPdfZip(studentIds, testId, jwtToken, origin);
     const zipFilename = zipFilePath.split(path.sep).pop();
     const stat = fs.statSync(zipFilePath);
     res.setHeader('Content-Type', 'application/zip');
@@ -82,9 +90,13 @@ export const generateStudentSelfPdf = async (req, res) => {
   if (authHeader && authHeader.startsWith('Bearer ')) {
     jwtToken = authHeader.replace(/^Bearer /, '');
   }
+  
+  // Get origin from request headers
+  const origin = req.headers.origin || config.tenants.defaultOrigin;
+  
   try {
-    logger.info('Student self-report PDF generation request received', { testId });
-    const result = await pdfService.generateStudentSelfPdf(testId, jwtToken);
+    logger.info('Student self-report PDF generation request received', { testId, origin });
+    const result = await pdfService.generateStudentSelfPdf(testId, jwtToken, origin);
     res.setHeader('Content-Type', 'application/pdf');
     res.setHeader('Content-Disposition', `attachment; filename="${result.filename}"`);
     res.setHeader('Content-Length', result.buffer.length);
@@ -111,9 +123,13 @@ export const generateTeacherSelfPdf = async (req, res) => {
   if (authHeader && authHeader.startsWith('Bearer ')) {
     jwtToken = authHeader.replace(/^Bearer /, '');
   }
+  
+  // Get origin from request headers
+  const origin = req.headers.origin || config.tenants.defaultOrigin;
+  
   try {
-    logger.info('Teacher self-report PDF generation request received', { testId });
-    const result = await pdfService.generateTeacherSelfPdf(testId, jwtToken);
+    logger.info('Teacher self-report PDF generation request received', { testId, origin });
+    const result = await pdfService.generateTeacherSelfPdf(testId, jwtToken, origin);
     res.setHeader('Content-Type', 'application/pdf');
     res.setHeader('Content-Disposition', `attachment; filename="${result.filename}"`);
     res.setHeader('Content-Length', result.buffer.length);

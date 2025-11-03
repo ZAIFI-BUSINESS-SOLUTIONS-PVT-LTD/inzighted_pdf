@@ -3,6 +3,24 @@ import dotenv from 'dotenv';
 // Load environment variables
 dotenv.config();
 
+// Tenant configuration for different products
+const tenantConfig = {
+  'https://inzighted.com': {
+    frontend: 'https://inzighted.com',
+    backend: 'https://api.inzighted.com/api'
+  },
+  'https://tamilnadu.inzighted.com': {
+    frontend: 'https://tamilnadu.inzighted.com',
+    backend: 'https://tamilnaduapi.inzighted.com/api'
+  }
+};
+
+// Get tenant URLs based on origin
+const getTenantUrls = (origin) => {
+  const tenant = tenantConfig[origin] || tenantConfig['https://inzighted.com']; // default to inzighted.com
+  return tenant;
+};
+
 const config = {
   // Server Configuration
   port: process.env.PORT || 8080,
@@ -12,7 +30,13 @@ const config = {
   cors: {
     origins: process.env.ALLOWED_ORIGINS
       ? process.env.ALLOWED_ORIGINS.split(',')
-      : ['http://localhost:3000', 'http://localhost:3001', 'http://localhost:5173', "https://inzighted.com"],
+      : [
+          'http://localhost:3000',
+          'http://localhost:3001', 
+          'http://localhost:5173',
+          'https://inzighted.com',
+          'https://tamilnadu.inzighted.com'
+        ],
     credentials: true,
     optionsSuccessStatus: 200
   },
@@ -22,8 +46,8 @@ const config = {
     timeout: parseInt(process.env.PDF_TIMEOUT) || 30000,
     cleanupDelay: parseInt(process.env.CLEANUP_DELAY) || 5000,
     tempDir: process.env.TEMP_DIR || './temp',
-    baseUrl: process.env.BASE_URL || 'https://inzighted.com',
-    authCookie: process.env.INZIGHTED_AUTH_COOKIE || '' // Add auth cookie config
+    authCookie: process.env.INZIGHTED_AUTH_COOKIE || '', // Add auth cookie config
+    getTenantUrls // Function to get tenant-specific URLs
   },
 
   // Browser Configuration
@@ -59,7 +83,13 @@ const config = {
 
   // Backend API Configuration
   backend: {
-    baseUrl: process.env.BACKEND_API_URL || 'https://api.inzighted.com/api'
+    baseUrl: null // Will be determined by tenant configuration
+  },
+
+  // Tenant Configuration
+  tenants: {
+    config: tenantConfig,
+    defaultOrigin: 'https://inzighted.com'
   }
 };
 

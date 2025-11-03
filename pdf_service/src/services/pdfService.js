@@ -59,13 +59,16 @@ class PdfService {
     }
   }
 
-  async generatePdf(studentId, testId, jwtToken) {
+  async generatePdf(studentId, testId, jwtToken, origin) {
     if (!this.isInitialized) {
       await this.initialize();
     }
 
     const startTime = Date.now();
     let page = null;
+    
+    // Get tenant-specific URLs
+    const tenantUrls = config.pdf.getTenantUrls(origin);
 
     try {
       logger.info('Starting PDF generation', { studentId, testId });
@@ -106,9 +109,9 @@ class PdfService {
       // Set viewport for consistent rendering
       await page.setViewport({ width: 1200, height: 800 });
 
-      // Build report URL
-      const reportURL = `${config.pdf.baseUrl}/report?studentId=${encodeURIComponent(studentId)}&testId=${encodeURIComponent(testId)}`;
-      logger.debug('Navigating to report URL', { url: reportURL });
+      // Build report URL using tenant-specific frontend URL
+      const reportURL = `${tenantUrls.frontend}/report?studentId=${encodeURIComponent(studentId)}&testId=${encodeURIComponent(testId)}`;
+      logger.debug('Navigating to report URL', { url: reportURL, origin });
 
       // Navigate to the page
       await page.goto(reportURL, {
@@ -179,7 +182,7 @@ class PdfService {
    * @param {string} jwtToken - JWT token for authentication
    * @returns {Promise<string>} - Path to the generated zip file
    */
-  async generateBulkPdfZip(studentIds, testId, jwtToken) {
+  async generateBulkPdfZip(studentIds, testId, jwtToken, origin) {
     if (!this.isInitialized) {
       await this.initialize();
     }
@@ -201,7 +204,7 @@ class PdfService {
 
       for (const studentId of studentIds) {
         try {
-          const { filePath, filename } = await this.generatePdf(studentId, testId, jwtToken);
+          const { filePath, filename } = await this.generatePdf(studentId, testId, jwtToken, origin);
           archive.file(filePath, { name: filename });
         } catch (err) {
           logger.warn('Failed to generate PDF for student', { studentId, error: err.message });
@@ -233,12 +236,13 @@ class PdfService {
     }
   }
 
-  async fetchReportData(studentId, testNum, authToken) {
+  async fetchReportData(studentId, testNum, authToken, origin) {
     try {
       logger.debug('Fetching educator student insights', { studentId, testNum });
 
+      const tenantUrls = config.pdf.getTenantUrls(origin);
       const response = await axios.post(
-        `${config.backend.baseUrl}/educator/students/insights/`,
+        `${tenantUrls.backend}/educator/students/insights/`,
         {
           student_id: studentId,
           test_num: testNum
@@ -306,10 +310,13 @@ class PdfService {
    * @param {string} testId
    * @param {string} jwtToken
    */
-  async generateStudentSelfPdf(testId, jwtToken) {
+  async generateStudentSelfPdf(testId, jwtToken, origin) {
     if (!this.isInitialized) {
       await this.initialize();
     }
+    
+    // Get tenant-specific URLs
+    const tenantUrls = config.pdf.getTenantUrls(origin);
     // If testId is 'overall' (any case), use '0'. Otherwise, remove any non-digit prefix (e.g., 'Test1' -> '1')
     let sanitizedTestId;
     if (String(testId).trim().toLowerCase() === 'overall') {
@@ -338,7 +345,7 @@ class PdfService {
         });
       }
       await page.setViewport({ width: 1200, height: 800 });
-      const reportURL = `${config.pdf.baseUrl}/student-report?testId=${encodeURIComponent(sanitizedTestId)}`;
+      const reportURL = `${tenantUrls.frontend}/student-report?testId=${encodeURIComponent(sanitizedTestId)}`;
       logger.debug('Navigating to student self-report URL', { url: reportURL });
       await page.goto(reportURL, {
         waitUntil: 'networkidle0',
@@ -370,10 +377,13 @@ class PdfService {
    * @param {string} testId
    * @param {string} jwtToken
    */
-  async generateTeacherSelfPdf(testId, jwtToken) {
+  async generateTeacherSelfPdf(testId, jwtToken, origin) {
     if (!this.isInitialized) {
       await this.initialize();
     }
+    
+    // Get tenant-specific URLs
+    const tenantUrls = config.pdf.getTenantUrls(origin);
     // If testId is 'overall' (any case), use '0'. Otherwise, remove any non-digit prefix (e.g., 'Test1' -> '1')
     let sanitizedTestId;
     if (String(testId).trim().toLowerCase() === 'overall') {
@@ -402,7 +412,7 @@ class PdfService {
         });
       }
       await page.setViewport({ width: 1200, height: 800 });
-      const reportURL = `${config.pdf.baseUrl}/teacher-report?testId=${encodeURIComponent(sanitizedTestId)}`;
+      const reportURL = `${tenantUrls.frontend}/teacher-report?testId=${encodeURIComponent(sanitizedTestId)}`;
       logger.debug('Navigating to teacher self-report URL', { url: reportURL });
       await page.goto(reportURL, {
         waitUntil: 'networkidle0',
