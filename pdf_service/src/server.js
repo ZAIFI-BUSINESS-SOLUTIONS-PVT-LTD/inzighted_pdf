@@ -10,15 +10,21 @@ import { generatePdf, healthCheck, generateBulkPdfZip, generateStudentSelfPdf, g
 import pdfService from './services/pdfService.js';
 
 const app = express();
-
+app.set('trust proxy', 1);
 // CORS configuration
+// Build allowed origins from configured ALLOWED_ORIGINS plus tenant frontends
+const allowedOrigins = new Set([
+  ...(Array.isArray(config.cors.origins) ? config.cors.origins : []),
+  ...Object.keys(config.tenants?.config || {})
+]);
 const corsOptions = {
   origin: (origin, callback) => {
     // Allow requests with no origin (like curl, mobile apps)
     if (!origin) return callback(null, true);
-    if (config.cors.origins.includes(origin)) {
+    if (allowedOrigins.has(origin)) {
       return callback(null, true);
     }
+    logger.warn('Blocked CORS origin', { origin });
     return callback(new Error('Not allowed by CORS'));
   },
   credentials: config.cors.credentials,
