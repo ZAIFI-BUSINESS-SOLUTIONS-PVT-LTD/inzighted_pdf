@@ -89,7 +89,7 @@ class PdfService {
           await page.setCookie({
             name: cookieParts[0],
             value: cookieParts[1],
-            domain: new URL(config.pdf.baseUrl).hostname,
+            domain: new URL(tenantUrls.frontend).hostname,
             path: '/',
             httpOnly: true
           });
@@ -100,7 +100,7 @@ class PdfService {
         await page.setCookie({
           name: 'jwt',
           value: jwtToken,
-          domain: new URL(config.pdf.baseUrl).hostname,
+          domain: new URL(tenantUrls.frontend).hostname,
           path: '/',
           httpOnly: false // Set to true if your frontend expects httpOnly
         });
@@ -124,7 +124,7 @@ class PdfService {
       await page.waitForFunction(
         "window.__PDF_READY__ === true",
         {
-          timeout: 30000, // Increased from 15000 to 30000ms
+          timeout: 120000, // Increased from 15000 to 30000ms
           polling: 500
         }
       );
@@ -339,7 +339,7 @@ class PdfService {
         await page.setCookie({
           name: 'jwt',
           value: jwtToken,
-          domain: new URL(config.pdf.baseUrl).hostname,
+          domain: new URL(tenantUrls.frontend).hostname,
           path: '/',
           httpOnly: false
         });
@@ -353,7 +353,7 @@ class PdfService {
       });
       await page.waitForFunction(
         "window.__PDF_READY__ === true",
-        { timeout: 30000, polling: 500 }
+        { timeout: 120000, polling: 500 }
       );
       const pdfBuffer = await page.pdf({
         format: 'A4', printBackground: true,
@@ -406,7 +406,7 @@ class PdfService {
         await page.setCookie({
           name: 'jwt',
           value: jwtToken,
-          domain: new URL(config.pdf.baseUrl).hostname,
+          domain: new URL(tenantUrls.frontend).hostname,
           path: '/',
           httpOnly: false
         });
@@ -420,7 +420,7 @@ class PdfService {
       });
       await page.waitForFunction(
         "window.__PDF_READY__ === true",
-        { timeout: 30000, polling: 500 }
+        { timeout: 120000, polling: 500 }
       );
       const pdfBuffer = await page.pdf({
         format: 'A4', printBackground: true,

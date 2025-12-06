@@ -43,7 +43,7 @@ const config = {
 
   // PDF Configuration
   pdf: {
-    timeout: parseInt(process.env.PDF_TIMEOUT) || 30000,
+    timeout: parseInt(process.env.PDF_TIMEOUT) || 120000,
     cleanupDelay: parseInt(process.env.CLEANUP_DELAY) || 5000,
     tempDir: process.env.TEMP_DIR || './temp',
     authCookie: process.env.INZIGHTED_AUTH_COOKIE || '', // Add auth cookie config
